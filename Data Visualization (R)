@@ -1,0 +1,333 @@
+APPENDIX 5: CODE FOR DATA VISUALISATION.
+All analyses were performed in R Studio (v4.0.1) unless specified otherwise.
+i) The following packages were used for data handling and visualisation:
+• ggtree (v2.2.1)
+• ggplot2 (v3.3.1)
+• ape (v5.4)
+• dplyr (v1.0.0)
+• ggnewscale (v0.4.1)
+• pheatmap (v1.0.08)
+library(ggtree)
+library(ape)
+library(ggplot2)
+library(dplyr)
+library(ggnewscale)
+library(pheatmamp)
+ii) Importing the recombination-free core SNP tree file from RAxML.
+#Importing recombination-free core SNP tree
+tree <- read.tree(RAxML_tree)
+#Renaming tree labels to just the accession
+tree$tip.label <- gsub("_snps", "", tree$tip.label)
+#Rerooting tree to clade A isolate
+tree <- root(tree, outgroup = "ERR1218625", resolve.root =
+TRUE)
+#Making a tree for quick visualisation named p
+p <- ggtree(tree)
+iii) Annotating recombination-free core SNP tree with a colour for each clade for a basis for the
+rest of analysis
+#Importing clade metadata and renaming rownames to the
+accession number
+clade <- read.csv(clade.csv, header=TRUE)
+rownames(clade) <- clade$ERR
+clade <- clade[c(-1)]
+#Grouping isolates based on their clade
+c1 <- rownames(clade)[clade$clade=="A"]
+c2 <- rownames(clade)[clade$clade=="B"]
+c3 <- rownames(clade)[clade$clade=="C"]
+cl <- list(c1,c2,c3)
+45
+#Making a tree based on this list and colouring tree branches according to each clade. Y is a
+rectangular tree, Y2 is a circular tree.
+tree2 <- groupOTU(tree, cl)
+y <- ggtree(tree2, aes(color=group), layout='rectangular') +
+scale_color_manual(name="new legend", values=c("darkorchid4",
+"dodgerblue2", "firebrick1")) + theme(legend.position =
+'none')
+y2 <- ggtree(tree2, aes(color=group), layout='circular') +
+scale_color_manual(name="new legend", values=c("darkorchid4",
+"dodgerblue2", "firebrick1")) + theme(legend.position =
+'none')
+iv) Making a metadata tree for population structure analysis.
+#Import metadata, fimH and CTX-M data
+data <- read.csv(metadata.csv, header=TRUE)
+fimH <- read.csv(fimh.csv, header=TRUE)
+ctxm <- read.csv(ctxm.csv, header=TRUE)
+#First ring in fimH- define breaks and colours and add them to
+the tree
+heat_breaks <- c("fimH30", "fimH41", "fimH22", "fimH298",
+"fimH377", "fimH681", "fimH27", "fimH5", "fimH326",
+"fimH322")
+heat_colours <- c("red", "dodgerblue","purple", "pink",
+"blueviolet", "hotpink4", "hotpink3", "hotpink2", "hotpink1",
+"darkorchid1")
+P1 <- gheatmap(y2, data = fimH, offset = 0, color = NULL,
+colnames=FALSE, width=0.05) +
+ scale_fill_manual(name="fimH", breaks = heat_breaks, values
+= heat_colours) + theme(legend.position='right')
+#New scale
+P2 <- P1 + new_scale_fill()
+#Second ring is CTX-M data
+heat_breaksct <- c("blaCTX-M-15", "blaCTX-M-14", "blaCTX-M27", "n/a")
+heat_coloursct <- c("red", "royalblue", "orange", "white")
+P3 <- gheatmap(P2, data = ctxm, color = NULL, width=0.05,
+offset = 0.0002, colnames=FALSE) +
+scale_fill_manual(name="Year", breaks = heat_breaksct, values
+= heat_coloursct) + theme(legend.position=NULL)
+#New scale
+P4 <- P3 + new_scale_fill()
+#Third ring is country
+country <- data.frame(rownames(data), data$Country)
+rownames(country) <- country$rownames.data.
+country <- country[c(-1)]
+46
+heat_breaks2 <- c("Denmark", "Spain","Germany","The
+Netherlands","France","Italy","Austria","Czech
+Republic","Czech","Serbia","UK","DRC","Thailand","n/a")
+heat_colours2 <- c("purple", "mediumorchid1","orange","red",
+"blue","tomato","hotpink4","mediumpurple1","deeppink","dodgerb
+lue4","hotpink","yellow","royalblue", "white")
+P5 <- gheatmap(P4, data = country, offset = 0.0004, color =
+NULL, colnames=FALSE, width=0.05) + scale_fill_manual(name=
+"Country", breaks = heat_breaks2, values = heat_colours2) +
+theme(legend.position='right')
+#New scale
+P6 <- P5 + new_scale_fill()
+#Fourth ring is source
+source <- data.frame(rownames(data), data$Source)
+rownames(source) <- source$rownames.data.
+source <- source[c(-1)]
+heat_breaks3 <- c("Dog",
+"Cat","Chicken","Rook","Cattle","Urine","Blood","Pus","Canal",
+"n/a")
+heat_colours3 <- c("deeppink3",
+"lightskyblue2","orange","red",
+"darkorchid3","darkorchid4","lightskyblue","deeppink4","dodger
+blue3", "white")
+P7 <- gheatmap(P6, data = source, offset = 0.0006, color =
+NULL, width=0.05, colnames=FALSE) +
+ scale_fill_manual(name="Source", breaks = heat_breaks3,
+values = heat_colours3) +
+ theme(legend.position='right')
+#New scale
+P8 <- P7 + new_scale_fill()
+#Fifth ring is origin
+origin <- data.frame(rownames(data), data$Origin)
+rownames(origin) <- origin$rownames.data.
+origin <- origin[c(-1)]
+heat_breaks4 <- c("Domestic animal", "Avian",
+"Livestock","Human", "Environment","n/a")
+heat_colours4 <-
+c("indianred1","orange","darkorchid3","moccasin","dodgerblue3"
+, "yellow")
+P9 <- gheatmap(P8, data = origin, offset = 0.0008, color =
+NULL, width=0.05, colnames =FALSE) +
+scale_fill_manual(name="Origin", breaks = heat_breaks4, values
+= heat_colours4) + theme(legend.position='right')
+#New scale
+P10 <- P9 + new_scale_fill()
+#Outer ring is year
+year <- data.frame(rownames(data), data$Year)
+rownames(year) <- year$rownames.data.
+year <- year[c(-1)]
+47
+heat_breaks5 <- c( "2008", "2009", "2010", "2011",
+"2007", "2005", "2006", "2003", "2004", "2012", "2014",
+"2015")
+heat_colours5 <- c("slategray1", "slategray2","slategray3",
+"skyblue1", "skyblue2", "skyblue3",
+"skyblue4", "slateblue","slateblue1",”slateblue2",
+"slateblue3", "slateblue4", "steelblue4")
+P11 <- gheatmap(P10, data = year, offset = 0.001, color =
+NULL, width=0.05, colnames=FALSE) +
+scale_fill_manual(name="Year", breaks = heat_breaks5, values =
+heat_colours5) + theme(legend.position=NULL)
+v) Annotation of Pan-genome Matrix to recombination-free core SNP tree
+pan <- gene_presence_absence
+rownames(pan) <- pan$Gene
+pan3 <- pan[c(-1)]
+pan <- pan[c(-1)]
+t(pan)
+pan <- t(pan)
+pan <- pan[c(-1),]
+colnames(pan) <- gsub("Ref_NZ_HG941718", "Reference",
+colnames(pan))
+pan2 <- gheatmap(y, pan,colnames=FALSE, low="white", high
+="black", color=NULL )
+vi) Annotation of presence and absence of virulence genes to recombination-free core SNP tree
+#Import virulence data
+virulence <- read.csv(virulence.csv, header=TRUE)
+rownames(virulence) <- virulence$name
+virulence <- virulence[c(-1)]
+#reordering virulence to group virulence genes by function
+virulence2 <- virulence[ ,c("ireA", "iroN" , "iroN2" ,
+"mchB,"mchC","mcmA", "mchF","mchF2", "celb","celb2", "astA",
+"cnf","ccI", "cma", "senB","sat", "cba", "iss", "katP", "gad",
+"iha", "tsh","nfaE" ,"lpfA", "capU")]
+#now make a gheatmap for virulence and add clade colour
+heat_breaksv <- c("yes", "No", "n/a")
+heat_coloursv <- c("orchid3", "white", "white"
+vir <- gheatmap(y, data = virulence2, offset = 0.00005,
+colnames_position = "top", hjust= 0.5, colnames_offset_y = 2,
+colnames_offset_x = 0.00001, font.size = 2.5, width = 10)
++scale_fill_manual(breaks = heat_breaksv, values =
+heat_coloursv) + theme(legend.position = "left")
+vii) Annotation of presence and absence of antimicrobial resistance genes to recombination-free
+core SNP tree
+#Import resistance data
+resistance <- read.csv(resistance.csv, header=TRUE)
+rownames(resistance) <- resistance$name
+resistance <- resistance[c(-1)]
+48
+heat_breaksr <- c("yes", "no", "n/a")
+heat_coloursr <- c("royalblue","white", "white")
+res <- gheatmap(y, data = resistance, offset = 0.00005,
+colnames_position = "top", hjust= 0.5, colnames_offset_y = 2,
+colnames_offset_x = 0.00001, font.size = 2.5, width = 10
++scale_fill_manual(breaks = heat_breaksr, values =
+heat_coloursr) + theme(legend.position = "left")
+viii) Annotation of presence and absence of plasmid replicons to recombination-free core SNP
+tree
+#Import plasmid data
+plasmid <- read.csv(plasmid.csv, header=TRUE)
+rownames(plasmid) <- plasmid&name
+plasmid <- plasmid[c(-1)]
+heat_breaksp <- c("yes", "no", "n/a")
+heat_coloursp <- c("purple","white", "white")
+plas <- gheatmap(y, data = plasmid, offset = 0.00005,
+colnames_position = "top", hjust= 0.5, colnames_offset_y = 2,
+colnames_offset_x = 0.00001, font.size = 2.5, width = 10
++scale_fill_manual(breaks = heat_breaksp, values =
+heat_coloursp) + theme(legend.position = "left")
+ix) Annotation of presence and absence of efflux pump transporters to recombination-free core
+SNP tree
+eff <- read.csv(efflux.cav), stringsAsFactors=TRUE)
+rownames(eff) <- eff$acc
+eff <- eff[c(-1)]
+#changing the order of the columns to group efflux pump
+transporters by efflux family
+eff2 <- eff[,c("AcrB1", "AcrB2", "AcrB3", "MdtC", "MdtB",
+"MdtF", "AcrD1", "AcrD2", "MdtK", "DinF", "YeeO", "SugE1",
+"SugE2", "MdtI", "MdtJ1", "MdtJ2", "EmrE1", "EmrE2", "MdfA",
+"MdtM", "YdhC", "EmrD", "Bcr1", "Bcr2", "Bcr3", "Bcr4",
+"MdtD", "YnfM", "YceL1", "YceL2", "MacB1", "MacB2")], "adk",
+"fumC", "gyrB", "icd", "recA", "purA", "mdh")]
+#Calculating the mean contig coverage for each MLST gene
+m <- means %>% summarise_if(is.numeric, mean)
+#Calculating the overall mean of contig coverage for MLST
+genes
+m2 <- rowMeans(m)
+#divide all values by the mean
+eff2 <- data.frame(eff2)/ m2
+#Annotating efflux pump transporter contig coverage data to
+the tree
+effs <- gheatmap(y, eff2, legend_title="Contig Coverage",
+offset=0.00005, low="white", high ="black", colnames=FALSE,
+color=NULL ) + scale_x_ggtree() + scale_y_continuous()
+49
+x) Annotation of presence and absence of efflux pump transporters to recombination-free core
+SNP tree. I First had to substitute each representative cluster sequence for a cluster number
+using gsub. An example is provided below. This was performed for every cluster for every
+efflux pump transporter. This was combined to make a full dataset of regulatory region
+clusters.
+#Example of substituting name of representative sequence for
+cluster
+mdtd$V10 <- gsub("ERR1218535_out", "cluster1", mdtd$V10)
+#Importing regulatory region data
+regs <- read.csv(regs.csv, header=TRUE)
+rownames(regs) <- regs$Acc
+regs <- regs[c(-1)]
+#changing the order of the columns to group efflux pump
+transporters by efflux family
+regs <- regs[,c("AcrB1", "AcrB2", "AcrB3", "MdtC", "MdtB",
+"MdtF", "AcrD1", "AcrD2", "MdtK", "DinF", "YeeO", "SugE1",
+"SugE2", "MdtI", "MdtJ1", "MdtJ2", "EmrE1", "EmrE2", "MdfA",
+"MdtM", "YdhC", "EmrD", "Bcr1", "Bcr2", "Bcr3", "Bcr4",
+"MdtD", "YnfM", "YceL1", "YceL2", "MacB1", "MacB2")]
+# Annotating tree with regulatory region data
+heat_breaksregs <- c("n/a", "cluster1", "cluster2",
+"cluster3", "cluster4", "cluster5", "cluster6", "cluster7")
+heat_coloursregs <- c("white","pink", "pink2", "deeppink",
+"royalblue", "yellow", "purple", "orange")
+regtree <- gheatmap(y, data = regs, offset = 0,
+colnames=FALSE, color=NULL) +
+scale_fill_manual(name="Cluster", breaks = heat_breaksregs,
+values = heat_coloursregs)
+xi) Plotting Assembly Statistics
+#importing assembly statistics data named output
+output <- read_excel("C:/Users/Nina/Downloads/output.xlsx",
+col_types = c("text", "numeric", "numeric", "numeric",
+"numeric", "numeric"))
+#Plotting data on exponential Y scale scatter graph
+AS <- ggplot(output, aes(x = name , y = 'Assembly Size')) +
+geom_point() + theme(panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),panel.background =
+element_blank(), axis.line = element_line(colour = "black")) +
+theme(axis.title.x=element_blank(),axis.text.x=element_blank()
+,axis.ticks.x=element_blank(), axis.title.y = element_blank())
++ scale_y_continuous(trans='log2') +
+scale_y_continuous(n.breaks=5)
+LC <- ggplot(output, aes(x = name, y = ='Largest Contig/
+Scaffold')) + geom_point() + theme(panel.grid.major =
+element_blank(), panel.grid.minor = 
+50
+element_blank(),panel.background = element_blank(), axis.line
+= element_line(colour = "black")) +
+
+theme(axis.title.x=element_blank(),axis.text.x=element_blank()
+,axis.ticks.x=element_blank(), axis.title.y = element_blank())
++ scale_y_continuous(trans='log2') +
+scale_y_continuous(n.breaks=5)
+ N50 <- ggplot(output, aes(x = name, y = output$N50)) +
+geom_point() + theme(panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),panel.background =
+element_blank(), axis.line = element_line(colour = "black")) +
+theme(axis.title.x=element_blank(),axis.text.x=element_blank()
+,axis.ticks.x=element_blank(), axis.title.y = element_blank())
++ scale_y_continuous(trans='log2') +
+scale_y_continuous(n.breaks=5)
+ N90 <- ggplot(output, aes(x = name, y = output$N90)) +
+geom_point() + theme(panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),panel.background =
+element_blank(), axis.line = element_line(colour = "black")) +
+theme(axis.title.x=element_blank(),axis.text.x=element_blank()
+,axis.ticks.x=element_blank(), axis.title.y = element_blank())
++ scale_y_continuous(trans='log2') +
+scale_y_continuous(n.breaks=5)
+xii) Plotting descriptive metatada
+#Stacked bar chart of number of isolates per each year and the proportion from each country
+Year_Country<- read_excel("lstm/Project/year_country.xlsx",
+col_types = c("text", "numeric", "text"))
+ggplot(data = Year_Country, aes(x = Year, y = `Number of
+Isolates`, fill = Country)) +
+ geom_bar(stat = "identity") + theme_bw() +
+scale_fill_manual(values=c("purple",
+"mediumorchid1","orange","red",
+"blue","tomato","hotpink4","mediumpurple1","yellow","dodgerblu
+e4","royalblue","deeppink","hotpink", "white"))
+#Stacked bar chart of number of isolates from each country
+and proportion from each source of origin
+Source_Country<-
+read_excel("lstm/Project/source_country.xlsx", col_types =
+c("text", "numeric", "text"))
+ggplot(data = Source_Country, aes(x =’ Country’, y = `Number
+of Isolates`, fill = ‘Source’)) +
+ geom_bar(stat = "identity") + theme_bw() +
+scale_fill_manual(values=c("purple", "blue", "yellow", "pink",
+"red")) + labs(color= "Source")
+stackedbaryear <-
+read_excel("lstm/Project/stackedbaryear.xlsx",
+ + col_types = c("text",
+"numeric", "text"))
+51
+#Stacked bar chart of number of isolates from each country
+and proportion from each source of origin
+Source_origin <- read_excel("lstm/Project/source_origin.xlsx",
+col_types = c("text", "numeric", "text"))
+ggplot(data = Source_origin, aes(x =Origin, y = ‘Number of
+Isolates`, fill = Source)) +
+ geom_bar(stat = "identity") + theme_bw() +
+scale_fill_manual(values=c("red",
+"royalblue","purple","orange", "tomato","dodgerblue",
+"hotpink","hotpink", "yellow")))
+xiii) Plotting heatmap of pairwise similarity matrix
+plot <- pheatmap(all.matrix, fontisize=2)
